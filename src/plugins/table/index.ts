@@ -12,8 +12,6 @@ import {
   addMdastExtension$,
   addSyntaxExtension$,
   addToMarkdownExtension$,
-  collabProviderFactory$,
-  collabProviderFactoryFn,
   insertDecoratorNode$
 } from '../core'
 import { LexicalTableVisitor } from './LexicalTableVisitor'
@@ -83,9 +81,7 @@ export const insertTable$ = Signal<{
  * A plugin that adds support for tables to the editor.
  * @group Table
  */
-export const tablePlugin = realmPlugin<{
-  provider?: collabProviderFactoryFn
-}>({
+export const tablePlugin = realmPlugin({
   init(realm, params) {
     realm.pubIn({
       // import
@@ -96,7 +92,6 @@ export const tablePlugin = realmPlugin<{
       [addLexicalNode$]: TableNode,
       [addExportVisitor$]: LexicalTableVisitor,
       [addToMarkdownExtension$]: gfmTableToMarkdown({ tableCellPadding: true, tablePipeAlign: true }),
-      [collabProviderFactory$]: params?.provider
     })
   }
 })

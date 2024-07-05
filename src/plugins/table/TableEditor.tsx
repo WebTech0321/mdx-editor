@@ -2,8 +2,6 @@ import { ContentEditable } from '@lexical/react/LexicalContentEditable.js'
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary.js'
 import { LexicalNestedComposer } from '@lexical/react/LexicalNestedComposer.js'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin.js'
-import { useCollaborationContext } from '@lexical/react/LexicalCollaborationContext';
-import { CollaborationPlugin } from "@lexical/react/LexicalCollaborationPlugin";
 import * as RadixPopover from '@radix-ui/react-popover'
 import {
   $createParagraphNode,
@@ -18,7 +16,7 @@ import {
   createEditor
 } from 'lexical'
 import * as Mdast from 'mdast'
-import React, { ElementType } from 'react'
+import React, { ElementType, useEffect } from 'react'
 import { exportLexicalTreeToMdast } from '../../exportMarkdownFromLexical'
 import { importMdastTreeToLexical } from '../../importMarkdownToLexical'
 import { lexicalTheme } from '../../styles/lexicalTheme'
@@ -34,8 +32,6 @@ import { uuidv4 } from '../../utils/uuid4'
 import {
   NESTED_EDITOR_UPDATED_COMMAND,
   codeBlockEditorDescriptors$,
-  collabProviderFactory$,
-  collabProviderFactoryFn,
   directiveDescriptors$,
   editorRootElementRef$,
   exportVisitors$,
@@ -318,7 +314,6 @@ export interface CellProps {
   activeCell: [number, number] | null
   setActiveCell: (cell: [number, number] | null) => void
   focus: boolean,
-  collabProviderFactory?: collabProviderFactoryFn
 }
 
 const Cell: React.FC<Omit<CellProps, 'focus'>> = ({ align, ...props }) => {
@@ -352,7 +347,6 @@ const CellEditor: React.FC<CellProps> = ({ focus, setActiveCell, parentEditor, l
     codeBlockEditorDescriptors,
     jsxIsAvailable,
     rootEditor,
-    collabProviderFactory
   ] = useCellValues(
     importVisitors$,
     exportVisitors$,
@@ -362,9 +356,7 @@ const CellEditor: React.FC<CellProps> = ({ focus, setActiveCell, parentEditor, l
     codeBlockEditorDescriptors$,
     jsxIsAvailable$,
     rootEditor$,
-    collabProviderFactory$
   )
-  const {isCollabActive} = useCollaborationContext();
   
   const [editor] = React.useState(() => {
     const editor = createEditor({
@@ -385,6 +377,19 @@ const CellEditor: React.FC<CellProps> = ({ focus, setActiveCell, parentEditor, l
 
     return editor
   })
+
+  useEffect(() => {
+    editor.update(() => {
+      importMdastTreeToLexical({
+        root: $getRoot(),
+        mdastRoot: { type: 'root', children: [{ type: 'paragraph', children: contents }] },
+        visitors: importVisitors,
+        jsxComponentDescriptors,
+        directiveDescriptors,
+        codeBlockEditorDescriptors
+      })
+    })
+  }, [contents, editor, importVisitors, jsxComponentDescriptors, directiveDescriptors, codeBlockEditorDescriptors])
 
   const saveAndFocus = React.useCallback(
     (nextCell: [number, number] | null) => {
@@ -471,28 +476,10 @@ const CellEditor: React.FC<CellProps> = ({ focus, setActiveCell, parentEditor, l
     focus && editor.focus()
   }, [focus, editor])
 
-  const excludedProperties = React.useMemo(() => {
-    const map = new Map()
-    map.set(TableNode, new Set(["focusEmitter"]))
-    map.set(CodeBlockNode, new Set(["__focusEmitter", "setCode", "setMeta", "setLanguage", "select"]))
-    map.set(DirectiveNode, new Set(["__focusEmitter"]))
-
-    return map
-  }, [])
-
   return (
     <LexicalNestedComposer initialEditor={editor} skipCollabChecks>
       <RichTextPlugin contentEditable={<ContentEditable />} placeholder={<div></div>} ErrorBoundary={LexicalErrorBoundary} />
-      {isCollabActive && collabProviderFactory ?
-        <CollaborationPlugin
-          id={editor.getKey()}
-          providerFactory={collabProviderFactory}
-          shouldBootstrap={false}
-          excludedProperties={excludedProperties}
-        />
-      :
-        <HistoryPlugin />
-      }
+      <HistoryPlugin />
     </LexicalNestedComposer>
   )
 }

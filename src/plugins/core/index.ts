@@ -3,8 +3,6 @@ import { createEmptyHistoryState } from '@lexical/react/LexicalHistoryPlugin.js'
 import { $isHeadingNode, HeadingTagType } from '@lexical/rich-text'
 import { $setBlocksType } from '@lexical/selection'
 import { $findMatchingParent, $insertNodeToNearestRoot, $wrapNodeInElement } from '@lexical/utils'
-import type { Doc } from 'yjs';
-import { Provider } from '@lexical/yjs';
 import { Cell, NodeRef, Realm, Signal, filter, map, scan, useCellValue, withLatestFrom } from '@mdxeditor/gurx'
 import {
   $createParagraphNode,
@@ -128,13 +126,6 @@ export const readOnly$ = Cell(false, (r) => {
     rootEditor?.setEditable(!readOnly)
   })
 })
-
-export type collabProviderFactoryFn = (id: string, yjsDocMap: Map<string, Doc>) => Provider
-/**
- * Holds the readOnly state of the editor.
- * @group Core
- */
-export const collabProviderFactory$ = Cell<collabProviderFactoryFn | null>(null)
 
 /** @internal */
 export const placeholder$ = Cell<React.ReactNode>('')

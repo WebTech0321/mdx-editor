@@ -1,5 +1,5 @@
 {
-  "name": "@webtech0321/mxd-editor-collab",
+  "name": "@webtech0321/mdx-editor-collab",
   "author": "Petyo Ivanov",
   "homepage": "https://mdxeditor.dev/",
   "bugs": {
@@ -11,7 +11,7 @@
     "*.css"
   ],
   "type": "module",
-  "version": "v3.7.2",
+  "version": "v3.7.3",
   "description": "React component for rich text markdown editing",
   "scripts": {
     "build": "vite build",
