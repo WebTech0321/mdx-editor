@@ -11,7 +11,7 @@
     "*.css"
   ],
   "type": "module",
-  "version": "0.0.0-development",
+  "version": "v3.7.2",
   "description": "React component for rich text markdown editing",
   "scripts": {
     "build": "vite build",
