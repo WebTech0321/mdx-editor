@@ -45,8 +45,7 @@ import {
   usedLexicalNodes$
 } from '../core'
 import { useCellValues } from '@mdxeditor/gurx'
-import { CodeBlockNode } from '../codeblock';
-import { DirectiveNode } from '../directives';
+import { isEqual } from "lodash"
 
 /**
  * Returns the element type for the cell based on the rowIndex
@@ -358,6 +357,7 @@ const CellEditor: React.FC<CellProps> = ({ focus, setActiveCell, parentEditor, l
     rootEditor$,
   )
   
+  const lastContents = React.useRef<Mdast.PhrasingContent[] | null>(null)
   const [editor] = React.useState(() => {
     const editor = createEditor({
       nodes: usedLexicalNodes,
@@ -368,7 +368,12 @@ const CellEditor: React.FC<CellProps> = ({ focus, setActiveCell, parentEditor, l
   })
 
   useEffect(() => {
+    if( isEqual(contents, lastContents.current) )
+      return;
+    lastContents.current = [...contents];
+
     editor.update(() => {
+      $getRoot().clear();
       importMdastTreeToLexical({
         root: $getRoot(),
         mdastRoot: { type: 'root', children: [{ type: 'paragraph', children: contents }] },
