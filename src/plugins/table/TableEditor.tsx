@@ -2,6 +2,8 @@ import { ContentEditable } from '@lexical/react/LexicalContentEditable.js'
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary.js'
 import { LexicalNestedComposer } from '@lexical/react/LexicalNestedComposer.js'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin.js'
+import { useCollaborationContext } from '@lexical/react/LexicalCollaborationContext';
+import { CollaborationPlugin } from "@lexical/react/LexicalCollaborationPlugin";
 import * as RadixPopover from '@radix-ui/react-popover'
 import {
   $createParagraphNode,
@@ -32,6 +34,8 @@ import { uuidv4 } from '../../utils/uuid4'
 import {
   NESTED_EDITOR_UPDATED_COMMAND,
   codeBlockEditorDescriptors$,
+  collabProviderFactory$,
+  collabProviderFactoryFn,
   directiveDescriptors$,
   editorRootElementRef$,
   exportVisitors$,
@@ -45,6 +49,8 @@ import {
   usedLexicalNodes$
 } from '../core'
 import { useCellValues } from '@mdxeditor/gurx'
+import { CodeBlockNode } from '../codeblock';
+import { DirectiveNode } from '../directives';
 
 /**
  * Returns the element type for the cell based on the rowIndex
@@ -311,7 +317,8 @@ export interface CellProps {
   align?: Mdast.AlignType
   activeCell: [number, number] | null
   setActiveCell: (cell: [number, number] | null) => void
-  focus: boolean
+  focus: boolean,
+  collabProviderFactory?: collabProviderFactoryFn
 }
 
 const Cell: React.FC<Omit<CellProps, 'focus'>> = ({ align, ...props }) => {
@@ -344,7 +351,8 @@ const CellEditor: React.FC<CellProps> = ({ focus, setActiveCell, parentEditor, l
     directiveDescriptors,
     codeBlockEditorDescriptors,
     jsxIsAvailable,
-    rootEditor
+    rootEditor,
+    collabProviderFactory
   ] = useCellValues(
     importVisitors$,
     exportVisitors$,
@@ -353,9 +361,11 @@ const CellEditor: React.FC<CellProps> = ({ focus, setActiveCell, parentEditor, l
     directiveDescriptors$,
     codeBlockEditorDescriptors$,
     jsxIsAvailable$,
-    rootEditor$
+    rootEditor$,
+    collabProviderFactory$
   )
-
+  const {isCollabActive} = useCollaborationContext();
+  
   const [editor] = React.useState(() => {
     const editor = createEditor({
       nodes: usedLexicalNodes,
@@ -461,10 +471,28 @@ const CellEditor: React.FC<CellProps> = ({ focus, setActiveCell, parentEditor, l
     focus && editor.focus()
   }, [focus, editor])
 
+  const excludedProperties = React.useMemo(() => {
+    const map = new Map()
+    map.set(TableNode, new Set(["focusEmitter"]))
+    map.set(CodeBlockNode, new Set(["__focusEmitter", "setCode", "setMeta", "setLanguage", "select"]))
+    map.set(DirectiveNode, new Set(["__focusEmitter"]))
+
+    return map
+  }, [])
+
   return (
-    <LexicalNestedComposer initialEditor={editor}>
+    <LexicalNestedComposer initialEditor={editor} skipCollabChecks>
       <RichTextPlugin contentEditable={<ContentEditable />} placeholder={<div></div>} ErrorBoundary={LexicalErrorBoundary} />
-      <HistoryPlugin />
+      {isCollabActive && collabProviderFactory ?
+        <CollaborationPlugin
+          id={editor.getKey()}
+          providerFactory={collabProviderFactory}
+          shouldBootstrap={false}
+          excludedProperties={excludedProperties}
+        />
+      :
+        <HistoryPlugin />
+      }
     </LexicalNestedComposer>
   )
 }

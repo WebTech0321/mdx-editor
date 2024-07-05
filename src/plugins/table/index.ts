@@ -3,6 +3,8 @@ import { Signal, map } from '@mdxeditor/gurx'
 import * as Mdast from 'mdast'
 import { gfmTableFromMarkdown, gfmTableToMarkdown } from 'mdast-util-gfm-table'
 import { gfmTable } from 'micromark-extension-gfm-table'
+import type { Doc } from 'yjs';
+import { Provider } from '@lexical/yjs';
 import {
   addExportVisitor$,
   addImportVisitor$,
@@ -10,6 +12,8 @@ import {
   addMdastExtension$,
   addSyntaxExtension$,
   addToMarkdownExtension$,
+  collabProviderFactory$,
+  collabProviderFactoryFn,
   insertDecoratorNode$
 } from '../core'
 import { LexicalTableVisitor } from './LexicalTableVisitor'
@@ -79,8 +83,10 @@ export const insertTable$ = Signal<{
  * A plugin that adds support for tables to the editor.
  * @group Table
  */
-export const tablePlugin = realmPlugin({
-  init(realm) {
+export const tablePlugin = realmPlugin<{
+  provider?: collabProviderFactoryFn
+}>({
+  init(realm, params) {
     realm.pubIn({
       // import
       [addMdastExtension$]: gfmTableFromMarkdown(),
@@ -89,7 +95,8 @@ export const tablePlugin = realmPlugin({
       // export
       [addLexicalNode$]: TableNode,
       [addExportVisitor$]: LexicalTableVisitor,
-      [addToMarkdownExtension$]: gfmTableToMarkdown({ tableCellPadding: true, tablePipeAlign: true })
+      [addToMarkdownExtension$]: gfmTableToMarkdown({ tableCellPadding: true, tablePipeAlign: true }),
+      [collabProviderFactory$]: params?.provider
     })
   }
 })
