@@ -364,17 +364,6 @@ const CellEditor: React.FC<CellProps> = ({ focus, setActiveCell, parentEditor, l
       theme: lexicalTheme
     })
 
-    editor.update(() => {
-      importMdastTreeToLexical({
-        root: $getRoot(),
-        mdastRoot: { type: 'root', children: [{ type: 'paragraph', children: contents }] },
-        visitors: importVisitors,
-        jsxComponentDescriptors,
-        directiveDescriptors,
-        codeBlockEditorDescriptors
-      })
-    })
-
     return editor
   })
 
@@ -389,7 +378,8 @@ const CellEditor: React.FC<CellProps> = ({ focus, setActiveCell, parentEditor, l
         codeBlockEditorDescriptors
       })
     })
-  }, [contents, editor, importVisitors, jsxComponentDescriptors, directiveDescriptors, codeBlockEditorDescriptors])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor, contents, importVisitors])
 
   const saveAndFocus = React.useCallback(
     (nextCell: [number, number] | null) => {
